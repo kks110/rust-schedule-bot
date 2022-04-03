@@ -1,8 +1,17 @@
-mod game_id;
+mod game_code;
 mod messages;
 mod commands;
 mod arguments;
 mod models;
+mod database;
+mod schema;
+
+#[macro_use]
+extern crate diesel;
+
+#[macro_use]
+extern crate diesel_migrations;
+
 
 use std::env;
 
@@ -16,8 +25,6 @@ use serenity::{
     prelude::*,
 };
 use tracing::info;
-use serenity::model::prelude::*;
-use serenity::framework::standard::{Args, CommandResult, macros::command};
 use dotenv::dotenv;
 use crate::commands::{
     NEW_GAME_COMMAND,
@@ -47,6 +54,8 @@ async fn main() {
     dotenv().ok();
     // Configure the client with your Discord bot token in the environment.
     let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
+
+    database::run_migrations();
 
     let framework = StandardFramework::new()
         .configure(|c| c

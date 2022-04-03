@@ -1,25 +1,11 @@
 use serenity::framework::standard::{Args};
 
-pub struct DaysPlayable {
-    pub game_id: String,
-    pub weekdays: Vec<String>
-}
-
-impl DaysPlayable {
-    pub fn new(game_id: String, weekdays: Vec<String>) -> DaysPlayable {
-        DaysPlayable {
-            game_id,
-            weekdays
-        }
-    }
-}
-
-pub fn parse_day_registration(mut args: Args) -> Result<DaysPlayable, String>  {
-    let game_id: String;
+pub fn parse_day_registration(mut args: Args) -> Result<(String, Vec<String>), String>  {
+    let game_code: String;
     let mut parsed_args = vec![];
 
     if let Ok(gid) = args.single::<String>() {
-        game_id = gid
+        game_code = gid
     } else {
         println!("Error with game id");
         return Err("Please enter a valid team name".to_string())
@@ -34,5 +20,5 @@ pub fn parse_day_registration(mut args: Args) -> Result<DaysPlayable, String>  {
         }
     }
 
-    Ok(DaysPlayable::new(game_id, parsed_args))
+    Ok((game_code, parsed_args))
 }

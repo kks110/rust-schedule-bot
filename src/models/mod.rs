@@ -1,60 +1,88 @@
-use serde::{Deserialize, Serialize};
+use crate::schema::games;
+use crate::schema::users;
 
-#[derive(Serialize, Deserialize)]
-pub enum Days {
-    Monday,
-    Tuesday,
-    Wednesday,
-    Thursday,
-    Friday,
-    Saturday,
-    Sunday
+#[derive(Identifiable, Queryable)]
+pub struct Game {
+    pub id: i32,
+    pub code: String,
+    pub name: String,
+    pub user_count: i32,
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct PlayerAndDays {
-    pub player_name: String,
-    pub weekdays: Vec<Days>
+#[derive(Insertable)]
+#[table_name="games"]
+pub struct NewGame {
+    pub code: String,
+    pub name: String,
+    pub user_count: i32,
 }
 
-impl PlayerAndDays {
-    fn new(player_name: String, weekdays: Vec<String>) -> PlayerAndDays {
-        let mut days = vec![];
+impl NewGame {
+    pub fn new(code: &str, name: &str, user_count: i32) -> NewGame {
+        NewGame {
+            code: code.to_string(),
+            name: name.to_string(),
+            user_count
+        }
+    }
+}
+
+#[derive(Identifiable, Queryable, Associations)]
+#[belongs_to(Game)]
+pub struct User {
+    pub id: i32,
+    pub name: String,
+    pub game_id: i32,
+    pub monday: bool,
+    pub tuesday: bool,
+    pub wednesday: bool,
+    pub thursday: bool,
+    pub friday: bool,
+    pub saturday: bool,
+    pub sunday: bool,
+}
+
+#[derive(Insertable)]
+#[table_name="users"]
+pub struct NewUser {
+    pub name: String,
+    pub game_id: i32,
+    pub monday: bool,
+    pub tuesday: bool,
+    pub wednesday: bool,
+    pub thursday: bool,
+    pub friday: bool,
+    pub saturday: bool,
+    pub sunday: bool,
+}
+
+impl NewUser {
+    pub fn new(name: &str, game_id: i32, weekdays: Vec<String>) -> NewUser {
+        let mut user = NewUser {
+            name: name.to_string(),
+            game_id,
+            monday: false,
+            tuesday: false,
+            wednesday: false,
+            thursday: false,
+            friday: false,
+            saturday: false,
+            sunday: false,
+        };
 
         for day in weekdays {
             match &day[..] {
-                "mon" => days.push(Days::Monday),
-                "tue" => days.push(Days::Tuesday),
-                "wed" => days.push(Days::Wednesday),
-                "thu" => days.push(Days::Thursday),
-                "fri" => days.push(Days::Friday),
-                "sat" => days.push(Days::Saturday),
-                "sun" => days.push(Days::Sunday),
+                "mon" => user.monday = true,
+                "tue" => user.tuesday = true,
+                "wed" => user.wednesday = true,
+                "thu" => user.thursday = true,
+                "fri" => user.friday = true,
+                "sat" => user.saturday = true,
+                "sun" => user.sunday = true,
                 _ => {}
             }
         }
 
-        PlayerAndDays {
-            player_name,
-            weekdays: days
-        }
-
-    }
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct GameData {
-    pub game_id: String,
-    pub players: Vec<PlayerAndDays>
-}
-
-impl GameData {
-    pub fn new(game_id: String, player: String, days: Vec<String>) -> GameData {
-        let player_and_days = PlayerAndDays::new(player, days);
-
-        GameData {
-            game_id,
-            players: vec![player_and_days]
-        }
+        user
     }
 }
