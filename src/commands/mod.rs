@@ -1,3 +1,4 @@
+use std::fmt::format;
 use serenity::framework::standard::{Args, CommandResult, macros::command};
 use serenity::model::prelude::Message;
 use serenity::prelude::Context;
@@ -6,7 +7,8 @@ use crate::{
     messages,
     arguments,
     models::{Game, User},
-    database
+    database,
+    validation
 };
 
 #[command]
@@ -43,16 +45,21 @@ async fn register_for_game(ctx: &Context, msg: &Message, args: Args) -> CommandR
     let mut user: Option<User> = None;
     let mut error_message: Option<String> = None;
 
+    match validation::validate_week_days(&days_playable) {
+        Ok(_) => {}
+        Err(e) => {error_message = Some(e)}
+    };
+
     let conn = database::establish_connection();
     match database::games::load_game_by_code(&conn, &game_code) {
         Ok(g) => { game = Some(g) }
-        Err(e) => { error_message = Some(e.to_string()) }
+        Err(_) => { error_message = Some(format!("Could not find game code: {}", &game_code)) }
     };
 
     if game.is_some() {
-        match database::users::create_user(&conn, player, game.unwrap().id, days_playable) {
+        match database::users::update_or_create(&conn, player, game.unwrap().id, days_playable) {
             Ok(u) => { user = Some(u) }
-            Err(e) => { error_message = Some(e.to_string()) }
+            Err(e) => { error_message = Some(format!("Whilst registering for the game the following error occurred: {}", e.to_string())) }
         };
     };
 
@@ -60,11 +67,31 @@ async fn register_for_game(ctx: &Context, msg: &Message, args: Args) -> CommandR
         messages::send_error(ctx, msg, error_message.unwrap()).await?;
     }
 
+    if user.is_some() {
+        let u = user.unwrap();
 
-    let title = "This is a title".to_string();
-    let description = "🔴 Monday\n 🟠 Tuesday\n 🟡 Wednesday\n 🟢 Thursday\n 🔵 Friday\n 🟣 Saturday\n 🟤 Sunday\n".to_string();
+        let title = format!("{}'s available daya", u.name);
+        let description = format!(
+            "{} Monday \n {} Tuesday \n {} Wednesday \n {} Thursday \n {} Friday \n {} Saturday \n {} Sunday \n",
+            available(u.monday),
+            available(u.tuesday),
+            available(u.wednesday),
+            available(u.thursday),
+            available(u.friday),
+            available(u.saturday),
+            available(u.sunday),
+        );
 
-    messages::send(ctx, msg, title, description).await?;
+        messages::send(ctx, msg, title, description).await?;
+    }
 
     Ok(())
+}
+
+fn available(day: bool) -> String {
+    if day {
+        "🟢".to_string()
+    } else {
+        "🔴".to_string()
+    }
 }

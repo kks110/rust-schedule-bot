@@ -5,6 +5,7 @@ mod arguments;
 mod models;
 mod database;
 mod schema;
+mod validation;
 
 #[macro_use]
 extern crate diesel;
