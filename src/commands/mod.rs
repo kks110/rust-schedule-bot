@@ -37,7 +37,7 @@ pub async fn new_game(ctx: &Context, msg: &Message, mut args: Args) -> CommandRe
 }
 
 #[command]
-async fn register_for_game(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
+pub async fn register_for_game(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     let (game_code, days_playable) = arguments::parse_day_registration(args)?;
     let player = &msg.author.name;
 
@@ -86,6 +86,17 @@ async fn register_for_game(ctx: &Context, msg: &Message, args: Args) -> CommandR
     }
 
     Ok(())
+}
+
+pub async fn view_availability(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
+    let game_code = arguments::parse_string(args)?;
+    let conn = database::establish_connection();
+    let game = database::games::load_game_by_code(&conn, &game_code)?;
+    let users: Vec<User> = database::users::load_users_by_game_id(&conn, game.id)?;
+
+    let title = format!("Availability for game {} ({})", game.name, game.id);
+
+
 }
 
 fn available(day: bool) -> String {

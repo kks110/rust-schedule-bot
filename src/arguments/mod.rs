@@ -22,3 +22,15 @@ pub fn parse_day_registration(mut args: Args) -> Result<(String, Vec<String>), S
 
     Ok((game_code, parsed_args))
 }
+
+pub fn parse_string(mut args: Args) -> Result<String, String> {
+    let name: String;
+
+    if let Ok(s) = args.single::<String>() {
+        name = s
+    } else {
+        return Err("Please enter a valid game code".to_string())
+    }
+
+    Ok(name)
+}
