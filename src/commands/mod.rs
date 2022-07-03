@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fmt::format;
 use serenity::framework::standard::{Args, CommandResult, macros::command};
 use serenity::model::prelude::Message;
@@ -95,8 +96,46 @@ pub async fn view_availability(ctx: &Context, msg: &Message, args: Args) -> Comm
     let users: Vec<User> = database::users::load_users_by_game_id(&conn, game.id)?;
 
     let title = format!("Availability for game {} ({})", game.name, game.id);
+    let mut days_and_players: HashMap<&str, Vec<&String>>;
+    days_and_players.insert("monday", Vec::new());
+    days_and_players.insert("tuesday", Vec::new());
+    days_and_players.insert("wednesday", Vec::new());
+    days_and_players.insert("thursday", Vec::new());
+    days_and_players.insert("friday", Vec::new());
+    days_and_players.insert("saturday", Vec::new());
+    days_and_players.insert("sunday", Vec::new());
 
+    for user in users {
+        if user.monday {
+            days_and_players["monday"].push(&user.name);
+            days_and_players["tuesday"].push(&user.name);
+            days_and_players["wednesday"].push(&user.name);
+            days_and_players["thursday"].push(&user.name);
+            days_and_players["friday"].push(&user.name);
+            days_and_players["saturday"].push(&user.name);
+            days_and_players["sunday"].push(&user.name);
+        }
+    }
+    let description = format!(
+        "Monday: {:?}\n
+        Tuesday: {:?}\n
+        Wednesday: {:?}\n
+        Thursday: {:?}\n
+        Friday: {:?}\n
+        Saturday: {:?}\n
+        Sunday: {:?}\n",
+        days_and_players["monday"],
+        days_and_players["tuesday"],
+        days_and_players["wednesday"],
+        days_and_players["thursday"],
+        days_and_players["friday"],
+        days_and_players["saturday"],
+        days_and_players["sunday"],
+    );
 
+    messages::send(ctx, msg, title, description).await?;
+
+    Ok(())
 }
 
 fn available(day: bool) -> String {
