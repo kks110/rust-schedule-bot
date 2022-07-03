@@ -25,7 +25,7 @@ pub fn load_users_by_game_id(conn: &PgConnection, gid: i32) -> Result<Vec<User>,
     use crate::schema::users::dsl::*;
 
     Ok(users.filter(game_id.eq(gid))
-        .load::<users>(conn)?)
+        .load::<User>(conn)?)
 }
 
 fn delete_user(conn: &PgConnection, user_id: i32) -> Result<(), Box<dyn Error>> {

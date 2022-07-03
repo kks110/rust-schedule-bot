@@ -29,7 +29,8 @@ use tracing::info;
 use dotenv::dotenv;
 use crate::commands::{
     NEW_GAME_COMMAND,
-    REGISTER_FOR_GAME_COMMAND
+    REGISTER_FOR_GAME_COMMAND,
+    VIEW_AVAILABILITY_COMMAND
 };
 struct Handler;
 
@@ -47,7 +48,7 @@ impl EventHandler for Handler {
 }
 
 #[group]
-#[commands(register_for_game, new_game)]
+#[commands(register_for_game, new_game, view_availability)]
 struct General;
 
 #[tokio::main]
