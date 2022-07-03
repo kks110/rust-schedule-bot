@@ -112,7 +112,7 @@ pub async fn view_availability(ctx: &Context, msg: &Message, args: Args) -> Comm
         };
 
         if users.is_some() {
-            let title = format!("Availability for game {} ({})", safe_game.name, safe_game.id);
+            let title = format!("Availability for game {} ({})", safe_game.name, safe_game.code);
             let mut days_and_players: HashMap<&str, Vec<&String>> = HashMap::new();
 
             let mut monday = Day::new();
