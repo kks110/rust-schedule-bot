@@ -28,6 +28,13 @@ pub fn load_users_by_game_id(conn: &PgConnection, gid: i32) -> Result<Vec<User>,
         .load::<User>(conn)?)
 }
 
+pub fn load_user_count_by_game_id(conn: &PgConnection, gid: i32) -> Result<usize, Box<dyn Error>> {
+    use crate::schema::users::dsl::*;
+
+    Ok(users.filter(game_id.eq(gid))
+        .load::<User>(conn)?.len())
+}
+
 fn delete_user(conn: &PgConnection, user_id: i32) -> Result<(), Box<dyn Error>> {
     use crate::schema::users::dsl::*;
 

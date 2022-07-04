@@ -19,3 +19,9 @@ pub fn load_game_by_code(conn: &PgConnection, game_code: &str) -> Result<Game, B
     Ok(games.filter(code.eq(game_code))
         .first(conn)?)
 }
+
+pub fn load_games(conn: &PgConnection) -> Result<Vec<Game>, Box<dyn Error>> {
+    use crate::schema::games::dsl::*;
+
+    Ok(games.load::<Game>(conn)?)
+}

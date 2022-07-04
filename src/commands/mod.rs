@@ -1,5 +1,6 @@
 use std::collections::HashMap;
-use std::fmt::format;
+use std::error::Error;
+use std::fmt::{Display, format, Formatter};
 use serenity::framework::standard::{Args, CommandResult, macros::command};
 use serenity::model::prelude::Message;
 use serenity::prelude::Context;
@@ -31,6 +32,40 @@ pub async fn new_game(ctx: &Context, msg: &Message, mut args: Args) -> CommandRe
 
     let title = format!("Game Created: {}", game_name);
     let description = format!("Please log your days using the game ID: **{}**", game_code);
+
+    messages::send(ctx, msg, title, description).await?;
+
+    Ok(())
+}
+
+#[command]
+pub async fn view_games(ctx: &Context, msg: &Message) -> CommandResult {
+    let mut error_message: Option<String> = None;
+    let mut games: Option<Vec<Game>> = None;
+
+    let conn = database::establish_connection();
+    match database::games::load_games(&conn) {
+        Ok(g) => { games = Some(g) }
+        Err(e) => { error_message = Some(e.to_string()) }
+    };
+
+    let mut description = "".to_string();
+    let title = format!("Game List:");
+
+    if games.is_some() {
+        for game in games.unwrap() {
+            match database::users::load_user_count_by_game_id(&conn, game.id) {
+                Ok(user_count) => {
+                    description.push_str(&format!("{} ({}) - {}/{} players registered\n", game.name, game.code, user_count, game.user_count));
+                }
+                Err(e) => { error_message = Some(e.to_string()) }
+            }
+        }
+    }
+
+    if error_message.is_some() {
+        messages::send_error(ctx, msg, error_message.unwrap()).await?;
+    }
 
     messages::send(ctx, msg, title, description).await?;
 
@@ -147,20 +182,20 @@ pub async fn view_availability(ctx: &Context, msg: &Message, args: Args) -> Comm
                 }
             }
             let description = format!(
-                "Monday: {:?}\n
-                Tuesday: {:?}\n
-                Wednesday: {:?}\n
-                Thursday: {:?}\n
-                Friday: {:?}\n
-                Saturday: {:?}\n
-                Sunday: {:?}\n",
-                monday.players,
-                tuesday.players,
-                wednesday.players,
-                thursday.players,
-                friday.players,
-                saturday.players,
-                sunday.players,
+                "Monday: {}\n
+                Tuesday: {}\n
+                Wednesday: {}\n
+                Thursday: {}\n
+                Friday: {}\n
+                Saturday: {}\n
+                Sunday: {}\n",
+                monday,
+                tuesday,
+                wednesday,
+                thursday,
+                friday,
+                saturday,
+                sunday,
             );
 
             messages::send(ctx, msg, title, description).await?;
@@ -192,5 +227,15 @@ struct Day {
 impl Day {
     fn new() -> Day {
         Day { players: Vec::new() }
+    }
+}
+
+impl Display for Day {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let mut output_string = "".to_string();
+        for player in &self.players {
+            output_string.push_str(&format!("{}, ", player))
+        }
+        write!(f, "{}", output_string)
     }
 }

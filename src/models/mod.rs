@@ -2,6 +2,7 @@ use crate::schema::games;
 use crate::schema::users;
 
 #[derive(Identifiable, Queryable)]
+#[table_name = "games"]
 pub struct Game {
     pub id: i32,
     pub code: String,
@@ -29,6 +30,7 @@ impl NewGame {
 
 #[derive(Identifiable, Queryable, Associations)]
 #[belongs_to(Game)]
+#[table_name = "users"]
 pub struct User {
     pub id: i32,
     pub name: String,
