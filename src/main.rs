@@ -58,7 +58,7 @@ struct General;
 async fn main() {
     dotenv().ok();
     // Configure the client with your Discord bot token in the environment.
-    let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
+    let token = env::var("SCHEDULE_DISCORD_TOKEN").expect("Expected a token in the environment");
 
     database::run_migrations();
 
