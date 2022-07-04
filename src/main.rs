@@ -33,6 +33,7 @@ use crate::commands::{
     AVAILABILITY_COMMAND,
     GAMES_COMMAND,
     DELETE_GAME_COMMAND,
+    HELP_COMMAND,
 };
 struct Handler;
 
@@ -50,7 +51,7 @@ impl EventHandler for Handler {
 }
 
 #[group]
-#[commands(register_for_game, new_game, availability, games, delete_game)]
+#[commands(register_for_game, new_game, availability, games, delete_game, help)]
 struct General;
 
 #[tokio::main]

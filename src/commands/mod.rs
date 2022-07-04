@@ -1,6 +1,4 @@
-use std::collections::HashMap;
-use std::error::Error;
-use std::fmt::{Display, format, Formatter};
+use std::fmt::{Display, Formatter};
 use serenity::framework::standard::{Args, CommandResult, macros::command};
 use serenity::model::prelude::Message;
 use serenity::prelude::Context;
@@ -171,8 +169,6 @@ pub async fn availability(ctx: &Context, msg: &Message, args: Args) -> CommandRe
 
         if users.is_some() {
             let title = format!("Availability for game {} ({})", safe_game.name, safe_game.code);
-            let mut days_and_players: HashMap<&str, Vec<&String>> = HashMap::new();
-
             let mut monday = Day::new();
             let mut tuesday = Day::new();
             let mut wednesday = Day::new();
@@ -231,6 +227,21 @@ pub async fn availability(ctx: &Context, msg: &Message, args: Args) -> CommandRe
     }
 
 
+
+    Ok(())
+}
+
+#[command]
+pub async fn help(ctx: &Context, msg: &Message) -> CommandResult {
+    let title = format!("Here is a quick rundown of the things you can do:");
+    let description = "`!new_game <game name>`  Create a game and give it a name\n\n\
+    `!games`  List all games\n\n\
+    `!delete_game <game code>`  Delete the game with the provided game code\n\n\
+    `!register_for_game <game code> <days available>`  Register for a game and specify days (days as 3 letter abbreviations).\n\n\
+    `!availability <game code>`  Show what days people are available for the specified game code.\n\n\
+    ".to_string();
+
+    messages::send(ctx, msg, title, description).await?;
 
     Ok(())
 }
