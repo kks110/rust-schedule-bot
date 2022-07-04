@@ -30,8 +30,8 @@ use dotenv::dotenv;
 use crate::commands::{
     NEW_GAME_COMMAND,
     REGISTER_FOR_GAME_COMMAND,
-    VIEW_AVAILABILITY_COMMAND,
-    VIEW_GAMES_COMMAND,
+    AVAILABILITY_COMMAND,
+    GAMES_COMMAND,
     DELETE_GAME_COMMAND,
 };
 struct Handler;
@@ -50,7 +50,7 @@ impl EventHandler for Handler {
 }
 
 #[group]
-#[commands(register_for_game, new_game, view_availability, view_games, delete_game)]
+#[commands(register_for_game, new_game, availability, games, delete_game)]
 struct General;
 
 #[tokio::main]

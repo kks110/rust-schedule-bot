@@ -39,7 +39,7 @@ pub async fn new_game(ctx: &Context, msg: &Message, mut args: Args) -> CommandRe
 }
 
 #[command]
-pub async fn view_games(ctx: &Context, msg: &Message) -> CommandResult {
+pub async fn games(ctx: &Context, msg: &Message) -> CommandResult {
     let mut error_message: Option<String> = None;
     let mut games: Option<Vec<Game>> = None;
 
@@ -148,7 +148,7 @@ pub async fn register_for_game(ctx: &Context, msg: &Message, args: Args) -> Comm
 }
 
 #[command]
-pub async fn view_availability(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
+pub async fn availability(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     let mut error_message: Option<String> = None;
     let mut game: Option<Game> = None;
     let mut users: Option<Vec<User>> = None;
