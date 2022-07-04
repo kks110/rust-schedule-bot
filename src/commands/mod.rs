@@ -48,7 +48,7 @@ pub async fn games(ctx: &Context, msg: &Message) -> CommandResult {
     };
 
     let mut description = "".to_string();
-    let title = format!("Game List:");
+    let title = "Game List:".to_string();
 
     if games.is_some() {
         for game in games.unwrap() {
@@ -116,7 +116,7 @@ pub async fn register_for_game(ctx: &Context, msg: &Message, args: Args) -> Comm
     if game.is_some() {
         match database::users::update_or_create(&conn, player, game.unwrap().id, days_playable) {
             Ok(u) => { user = Some(u) }
-            Err(e) => { error_message = Some(format!("Whilst registering for the game the following error occurred: {}", e.to_string())) }
+            Err(e) => { error_message = Some(format!("Whilst registering for the game the following error occurred: {}", e)) }
         };
     };
 
@@ -226,14 +226,12 @@ pub async fn availability(ctx: &Context, msg: &Message, args: Args) -> CommandRe
         messages::send_error(ctx, msg, error_message.unwrap()).await?;
     }
 
-
-
     Ok(())
 }
 
 #[command]
 pub async fn help(ctx: &Context, msg: &Message) -> CommandResult {
-    let title = format!("Here is a quick rundown of the things you can do:");
+    let title = "Here is a quick rundown of the things you can do:".to_string();
     let description = "`!new_game <game name>`  Create a game and give it a name\n\n\
     `!games`  List all games\n\n\
     `!delete_game <game code>`  Delete the game with the provided game code\n\n\

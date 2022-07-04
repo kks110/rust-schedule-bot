@@ -1,5 +1,5 @@
 
-pub fn validate_week_days(weekdays: &Vec<String>) -> Result<(), String> {
+pub fn validate_week_days(weekdays: &[String]) -> Result<(), String> {
     let allowed_week_days = vec![
         "mon".to_string(),
         "tue".to_string(),
