@@ -35,7 +35,7 @@ pub fn load_user_count_by_game_id(conn: &PgConnection, gid: i32) -> Result<usize
         .load::<User>(conn)?.len())
 }
 
-fn delete_user(conn: &PgConnection, user_id: i32) -> Result<(), Box<dyn Error>> {
+pub fn delete_user(conn: &PgConnection, user_id: i32) -> Result<(), Box<dyn Error>> {
     use crate::schema::users::dsl::*;
 
     diesel::delete(users.filter(id.eq(user_id))).execute(conn)?;

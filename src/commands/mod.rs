@@ -73,6 +73,29 @@ pub async fn view_games(ctx: &Context, msg: &Message) -> CommandResult {
 }
 
 #[command]
+pub async fn delete_game(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
+    let game_code = arguments::parse_string(args)?;
+
+    let mut error_message: Option<String> = None;
+
+    let conn = database::establish_connection();
+
+    match database::games::delete_game(&conn, &game_code) {
+        Ok(_) => {}
+        Err(e) => { error_message = Some(format!("Error deleting game: {}", e)) }
+    };
+
+
+    if error_message.is_some() {
+        messages::send_error(ctx, msg, error_message.unwrap()).await?;
+    }
+
+    messages::send(ctx, msg, "Game delete successfully", "").await?;
+
+    Ok(())
+}
+
+#[command]
 pub async fn register_for_game(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     let (game_code, days_playable) = arguments::parse_day_registration(args)?;
     let player = &msg.author.name;
