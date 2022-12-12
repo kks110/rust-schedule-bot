@@ -1,33 +1,51 @@
-use std::fmt::Display;
-use serenity::framework::standard::CommandResult;
-use serenity::model::prelude::Message;
-use serenity::prelude::Context;
+use crate::Context;
+use crate::Error;
 
-pub async fn send<T: Display>(
-    ctx: &Context,
-    msg: &Message,
-    title: T,
-    description: T,
-) -> CommandResult {
-    msg.channel_id.send_message(&ctx.http, |m| {
-        m.embed(|e| {
-            e.colour(0x9003fc);
-            e.title(title);
-            e.description(description);
-
-            e
+pub async fn send_message<
+    D: ToString,
+>(ctx: Context<'_>, title: D, description: D) -> Result<(), Error> {
+    ctx.send(|b| {
+        b.embed(|b| {
+            b.colour(0xcc8800)
+                .title(title)
+                .description(description)
         })
     }).await?;
+
     Ok(())
 }
 
-pub async fn send_error<T: Display>(ctx: &Context, msg: &Message, error: T) -> CommandResult {
-    msg.channel_id.send_message(&ctx.http, |m| {
-        m.embed(|e| {
-            e
-                .colour(0xff5733)
-                .title(format!("❌ An error as occurred: {}", error))
+// pub async fn send_message_with_fields<
+//     D: ToString,
+//     T,
+//     U,
+//     It
+// >(ctx: Context<'_>, title: D, fields: It) -> Result<(), Error>
+//     where
+//         It: IntoIterator<Item = (T, U, bool)>,
+//         T: ToString,
+//         U: ToString,
+// {
+//     ctx.send(|b| {
+//         b.embed(|b| {
+//             b.colour(0xcc8800)
+//                 .title(title)
+//                 .fields(fields)
+//         })
+//     }).await?;
+//
+//     Ok(())
+// }
+
+pub async fn send_error_message<
+    D: ToString,
+>(ctx: Context<'_>, title: D) -> Result<(), Error> {
+    ctx.send(|b| {
+        b.embed(|b| {
+            b.colour(0xcc0000)
+                .title(title)
         })
     }).await?;
+
     Ok(())
 }

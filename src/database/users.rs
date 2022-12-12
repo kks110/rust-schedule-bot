@@ -49,5 +49,6 @@ pub fn update_or_create(conn: &PgConnection, name: &str, game_id: i32, weekdays:
         delete_user(conn, potential_user.unwrap().id)?;
     }
 
-    Ok(create_user(conn, name, game_id, weekdays)?)
+    let user = create_user(conn, name, game_id, weekdays)?;
+    Ok(user)
 }

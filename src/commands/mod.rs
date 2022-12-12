@@ -1,19 +1,19 @@
 use std::fmt::{Display, Formatter};
-use serenity::framework::standard::{Args, CommandResult, macros::command};
-use serenity::model::prelude::Message;
-use serenity::prelude::Context;
 use crate::{
     game_code,
     messages,
-    arguments,
     models::{Game, User},
     database,
-    validation
+    Context,
+    Error
 };
 
-#[command]
-pub async fn new_game(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    let game_name =  args.single::<String>()?;
+#[poise::command(slash_command)]
+pub async fn new_game(
+    ctx: Context<'_>,
+    #[description = "Game name"]
+    game_name: String,
+) -> Result<(), Error> {
     let game_code = game_code::generate();
 
     let mut error_message: Option<String> = None;
@@ -24,20 +24,21 @@ pub async fn new_game(ctx: &Context, msg: &Message, mut args: Args) -> CommandRe
         Err(e) => { error_message = Some(e.to_string()) }
     };
 
-    if error_message.is_some() {
-        messages::send_error(ctx, msg, error_message.unwrap()).await?;
+    if let Some(error_message) = error_message {
+        let title = format!("An Error occurred: {}", error_message);
+        messages::send_error_message(ctx, title).await?;
     }
 
     let title = format!("Game Created: {}", game_name);
     let description = format!("Please log your days using the game ID: **{}**", game_code);
 
-    messages::send(ctx, msg, title, description).await?;
+    messages::send_message(ctx, title, description).await?;
 
     Ok(())
 }
 
-#[command]
-pub async fn games(ctx: &Context, msg: &Message) -> CommandResult {
+#[poise::command(slash_command)]
+pub async fn games(ctx: Context<'_>) -> Result<(), Error> {
     let mut error_message: Option<String> = None;
     let mut games: Option<Vec<Game>> = None;
 
@@ -50,8 +51,8 @@ pub async fn games(ctx: &Context, msg: &Message) -> CommandResult {
     let mut description = "".to_string();
     let title = "Game List:".to_string();
 
-    if games.is_some() {
-        for game in games.unwrap() {
+    if let Some(games) = games {
+        for game in games {
             match database::users::load_user_count_by_game_id(&conn, game.id) {
                 Ok(user_count) => {
                     description.push_str(&format!("{} ({}) - {}/{} players registered\n", game.name, game.code, user_count, game.user_count));
@@ -61,19 +62,21 @@ pub async fn games(ctx: &Context, msg: &Message) -> CommandResult {
         }
     }
 
-    if error_message.is_some() {
-        messages::send_error(ctx, msg, error_message.unwrap()).await?;
+    if let Some(error_message) = error_message {
+        messages::send_error_message(ctx, error_message).await?;
     }
 
-    messages::send(ctx, msg, title, description).await?;
+    messages::send_message(ctx, title, description).await?;
 
     Ok(())
 }
 
-#[command]
-pub async fn delete_game(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
-    let game_code = arguments::parse_string(args)?;
-
+#[poise::command(slash_command)]
+pub async fn delete_game(
+    ctx: Context<'_>,
+    #[description = "Game code"]
+    game_code: String,
+) -> Result<(), Error> {
     let mut error_message: Option<String> = None;
 
     let conn = database::establish_connection();
@@ -84,28 +87,68 @@ pub async fn delete_game(ctx: &Context, msg: &Message, args: Args) -> CommandRes
     };
 
 
-    if error_message.is_some() {
-        messages::send_error(ctx, msg, error_message.unwrap()).await?;
+    if let Some(error_message) = error_message {
+        messages::send_error_message(ctx,error_message).await?;
     }
 
-    messages::send(ctx, msg, "Game delete successfully", "").await?;
+    messages::send_message(ctx, "Game delete successfully", "").await?;
 
     Ok(())
 }
 
-#[command]
-pub async fn register_for_game(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
-    let (game_code, days_playable) = arguments::parse_day_registration(args)?;
-    let player = &msg.author.name;
+#[poise::command(slash_command)]
+pub async fn register_for_game(
+    ctx: Context<'_>,
+    #[description = "Game code"]
+    game_code: String,
+    #[description = "Monday"]
+    #[lazy]
+    monday: Option<bool>,
+    #[description = "Tuesday"]
+    #[lazy]
+    tuesday: Option<bool>,
+    #[description = "Wednesday"]
+    #[lazy]
+    wednesday: Option<bool>,
+    #[description = "Thursday"]
+    #[lazy]
+    thursday: Option<bool>,
+    #[description = "Friday"]
+    #[lazy]
+    friday: Option<bool>,
+) -> Result<(), Error> {
+    let mut days_playable: Vec<String> = vec![];
+    if let Some(mon) = monday {
+        if mon {
+            days_playable.push( "monday".to_string())
+        }
+    }
+    if let Some(tue) = tuesday {
+        if tue {
+            days_playable.push("tuesday".to_string())
+        }
+    }
+    if let Some(weds) = wednesday {
+        if weds {
+            days_playable.push("wednesday".to_string())
+        }
+    }
+    if let Some(thurs) = thursday {
+        if thurs {
+            days_playable.push("thursday".to_string())
+        }
+    }
+    if let Some(fri) = friday {
+        if fri {
+            days_playable.push("friday".to_string())
+        }
+    }
+
+    let player: &str = &ctx.author().name;
 
     let mut game: Option<Game> = None;
-    let mut user: Option<User> = None;
+    let mut user_and_game: Option<(User, Game)> = None;
     let mut error_message: Option<String> = None;
-
-    match validation::validate_week_days(&days_playable) {
-        Ok(_) => {}
-        Err(e) => {error_message = Some(e)}
-    };
 
     let conn = database::establish_connection();
     match database::games::load_game_by_code(&conn, &game_code) {
@@ -113,21 +156,19 @@ pub async fn register_for_game(ctx: &Context, msg: &Message, args: Args) -> Comm
         Err(_) => { error_message = Some(format!("Could not find game code: {}", &game_code)) }
     };
 
-    if game.is_some() {
-        match database::users::update_or_create(&conn, player, game.unwrap().id, days_playable) {
-            Ok(u) => { user = Some(u) }
+    if let Some(game) = game {
+        match database::users::update_or_create(&conn, player, game.id, days_playable) {
+            Ok(u) => { user_and_game = Some((u, game)) }
             Err(e) => { error_message = Some(format!("Whilst registering for the game the following error occurred: {}", e)) }
         };
     };
 
-    if error_message.is_some() {
-        messages::send_error(ctx, msg, error_message.unwrap()).await?;
+    if let Some(error_message) = error_message {
+        messages::send_error_message(ctx, error_message).await?;
     }
 
-    if user.is_some() {
-        let u = user.unwrap();
-
-        let title = format!("{}'s available days", u.name);
+    if let Some((u, game)) = user_and_game {
+        let title = format!("{}'s available days for game {}. (Code: {})", u.name, game.name, game.code);
         let description = format!(
             "{} Monday \n {} Tuesday \n {} Wednesday \n {} Thursday \n {} Friday \n {} Saturday \n {} Sunday \n",
             available(u.monday),
@@ -139,36 +180,38 @@ pub async fn register_for_game(ctx: &Context, msg: &Message, args: Args) -> Comm
             available(u.sunday),
         );
 
-        messages::send(ctx, msg, title, description).await?;
+        messages::send_message(ctx, title, description).await?;
     }
 
     Ok(())
 }
 
-#[command]
-pub async fn availability(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
+
+#[poise::command(slash_command)]
+pub async fn availability(
+    ctx: Context<'_>,
+    #[description = "Game code"]
+    game_code: String,
+) -> Result<(), Error> {
     let mut error_message: Option<String> = None;
     let mut game: Option<Game> = None;
     let mut users: Option<Vec<User>> = None;
 
-    let game_code = arguments::parse_string(args)?;
     let conn = database::establish_connection();
-
 
     match database::games::load_game_by_code(&conn, &game_code) {
         Ok(g) => { game = Some(g) }
         Err(_) => { error_message = Some(format!("Could not find game code: {}", &game_code)) }
     };
 
-    if game.is_some() {
-        let safe_game = game.unwrap();
-        match database::users::load_users_by_game_id(&conn, safe_game.id) {
+    if let Some(game) = game {
+        match database::users::load_users_by_game_id(&conn, game.id) {
             Ok(u) => { users = Some(u) }
             Err(e) => { error_message = Some(format!("Failed to load users: {}", e)) }
         };
 
-        if users.is_some() {
-            let title = format!("Availability for game {} ({})", safe_game.name, safe_game.code);
+        if let Some(users) = users {
+            let title = format!("Availability for game {} ({})", game.name, game.code);
             let mut monday = Day::new();
             let mut tuesday = Day::new();
             let mut wednesday = Day::new();
@@ -177,7 +220,7 @@ pub async fn availability(ctx: &Context, msg: &Message, args: Args) -> CommandRe
             let mut saturday = Day::new();
             let mut sunday = Day::new();
 
-            for user in users.unwrap() {
+            for user in users {
                 if user.monday {
                     monday.players.push(user.name.clone());
                 }
@@ -217,29 +260,29 @@ pub async fn availability(ctx: &Context, msg: &Message, args: Args) -> CommandRe
                 sunday,
             );
 
-            messages::send(ctx, msg, title, description).await?;
+            messages::send_message(ctx, title, description).await?;
         }
 
     }
 
-    if error_message.is_some() {
-        messages::send_error(ctx, msg, error_message.unwrap()).await?;
+    if let Some(error_message) = error_message {
+        messages::send_error_message(ctx, error_message).await?;
     }
 
     Ok(())
 }
 
-#[command]
-pub async fn help(ctx: &Context, msg: &Message) -> CommandResult {
+#[poise::command(slash_command)]
+pub async fn help(ctx: Context<'_>) -> Result<(), Error> {
     let title = "Here is a quick rundown of the things you can do:".to_string();
-    let description = "`!new_game <game name>`  Create a game and give it a name\n\n\
-    `!games`  List all games\n\n\
-    `!delete_game <game code>`  Delete the game with the provided game code\n\n\
-    `!register_for_game <game code> <days available>`  Register for a game and specify days (days as 3 letter abbreviations).\n\n\
-    `!availability <game code>`  Show what days people are available for the specified game code.\n\n\
+    let description = "`/new_game <game name>`  Create a game and give it a name\n\n\
+    `/games`  List all games\n\n\
+    `/delete_game <game code>`  Delete the game with the provided game code\n\n\
+    `/register_for_game <game code> <multiple data>`  Register for a game, select the days you can do and set at true.\n\n\
+    `/availability <game code>`  Show what days people are available for the specified game code.\n\n\
     ".to_string();
 
-    messages::send(ctx, msg, title, description).await?;
+    messages::send_message(ctx, title, description).await?;
 
     Ok(())
 }

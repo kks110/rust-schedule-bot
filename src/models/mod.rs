@@ -74,13 +74,11 @@ impl NewUser {
 
         for day in weekdays {
             match &day.to_lowercase()[..] {
-                "mon" => user.monday = true,
-                "tue" => user.tuesday = true,
-                "wed" => user.wednesday = true,
-                "thu" => user.thursday = true,
-                "fri" => user.friday = true,
-                "sat" => user.saturday = true,
-                "sun" => user.sunday = true,
+                "monday" => user.monday = true,
+                "tuesday" => user.tuesday = true,
+                "wednesday" => user.wednesday = true,
+                "thursday" => user.thursday = true,
+                "friday" => user.friday = true,
                 _ => {}
             }
         }

@@ -1,11 +1,9 @@
 mod game_code;
 mod messages;
 mod commands;
-mod arguments;
 mod models;
 mod database;
 mod schema;
-mod validation;
 
 #[macro_use]
 extern crate diesel;
@@ -13,68 +11,77 @@ extern crate diesel;
 #[macro_use]
 extern crate diesel_migrations;
 
-
-use std::env;
-
-use serenity::{
-    async_trait,
-    framework::{
-        standard::macros::group,
-        StandardFramework,
-    },
-    model::{event::ResumedEvent, gateway::Ready},
-    prelude::*,
-};
-use tracing::info;
 use dotenv::dotenv;
-use crate::commands::{
-    NEW_GAME_COMMAND,
-    REGISTER_FOR_GAME_COMMAND,
-    AVAILABILITY_COMMAND,
-    GAMES_COMMAND,
-    DELETE_GAME_COMMAND,
-    HELP_COMMAND,
-};
-struct Handler;
+use poise::serenity_prelude as serenity;
+use crate::database::run_migrations;
 
-#[async_trait]
-impl EventHandler for Handler {
-    async fn ready(&self, _: Context, ready: Ready) {
-        let _ = &__arg1;
-        info!("Connected as {}", ready.user.name);
-    }
+pub struct Data {} // User data, which is stored and accessible in all command invocations
+type Error = Box<dyn std::error::Error + Send + Sync>;
+type Context<'a> = poise::Context<'a, Data, Error>;
 
-    async fn resume(&self, _: Context, _: ResumedEvent) {
-        let _ = &__arg1;
-        info!("Resumed");
+async fn on_error(error: poise::FrameworkError<'_, Data, Error>) {
+    // This is our custom error handler
+    // They are many errors that can occur, so we only handle the ones we want to customize
+    // and forward the rest to the default handler
+    match error {
+        poise::FrameworkError::Setup { error, .. } => panic!("Failed to start bot: {:?}", error),
+        poise::FrameworkError::Command { error, ctx } => {
+            println!("Error in command `{}`: {:?}", ctx.command().name, error,);
+        }
+        error => {
+            if let Err(e) = poise::builtins::on_error(error).await {
+                println!("Error while handling error: {}", e)
+            }
+        }
     }
 }
-
-#[group]
-#[commands(register_for_game, new_game, availability, games, delete_game, help)]
-struct General;
 
 #[tokio::main]
 async fn main() {
     dotenv().ok();
-    // Configure the client with your Discord bot token in the environment.
-    let token = env::var("SCHEDULE_DISCORD_TOKEN").expect("Expected a token in the environment");
 
-    database::run_migrations();
+    run_migrations();
 
-    let framework = StandardFramework::new()
-        .configure(|c| c
-        .prefix("!")
-        .delimiters(vec![" "]))
-        .group(&GENERAL_GROUP);
+    let framework = poise::Framework::builder()
+        .options(poise::FrameworkOptions {
+            commands: vec![
+                commands::new_game(),
+                commands::availability(),
+                commands::games(),
+                commands::delete_game(),
+                commands::help(),
+                commands::register_for_game(),
+            ],
+            pre_command: |ctx| {
+                Box::pin(async move {
+                    println!("Executing command {}...", ctx.command().qualified_name);
+                })
+            },
+            /// This code is run after a command if it was successful (returned Ok)
+            post_command: |ctx| {
+                Box::pin(async move {
+                    println!("Executed command {}!", ctx.command().qualified_name);
+                })
+            },
+            on_error: |error| Box::pin(on_error(error)),
+            ..Default::default()
+        })
+        .token(std::env::var("SCHEDULE_DISCORD_TOKEN").expect("missing SCHEDULE_DISCORD_TOKEN"))
+        .intents(serenity::GatewayIntents::non_privileged() | serenity::GatewayIntents::MESSAGE_CONTENT)
+        .setup(|ctx, _ready, framework| {
+            Box::pin(async move {
+                poise::serenity_prelude::GuildId(844882826930421800)
+                    .set_application_commands(ctx, |b| {
+                        *b = poise::builtins::create_application_commands(
+                            &framework.options().commands,
+                        );
+                        b
+                    })
+                    .await
+                    .unwrap();
+                Ok(Data {})
+            })
+        });
 
-    let mut client = Client::builder(token)
-        .framework(framework)
-        .event_handler(Handler)
-        .await
-        .expect("Error creating client");
-
-    if let Err(why) = client.start().await {
-        println!("Client error: {:?}", why);
-    }
+    framework.run().await.unwrap();
 }
