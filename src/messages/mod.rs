@@ -6,7 +6,7 @@ pub async fn send_message<
 >(ctx: Context<'_>, title: D, description: D) -> Result<(), Error> {
     ctx.send(|b| {
         b.embed(|b| {
-            b.colour(0xcc8800)
+            b.colour(0x682191)
                 .title(title)
                 .description(description)
         })
