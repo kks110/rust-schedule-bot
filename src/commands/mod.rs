@@ -8,6 +8,7 @@ use crate::{
     Error
 };
 
+/// Create a new game for people to join
 #[poise::command(slash_command)]
 pub async fn new_game(
     ctx: Context<'_>,
@@ -37,6 +38,7 @@ pub async fn new_game(
     Ok(())
 }
 
+/// List all games available
 #[poise::command(slash_command)]
 pub async fn games(ctx: Context<'_>) -> Result<(), Error> {
     let mut error_message: Option<String> = None;
@@ -71,6 +73,7 @@ pub async fn games(ctx: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
 
+/// Delete a game that is no longer needed
 #[poise::command(slash_command)]
 pub async fn delete_game(
     ctx: Context<'_>,
@@ -96,6 +99,7 @@ pub async fn delete_game(
     Ok(())
 }
 
+/// Register for a game, entering your free days
 #[poise::command(slash_command)]
 pub async fn register_for_game(
     ctx: Context<'_>,
@@ -186,7 +190,7 @@ pub async fn register_for_game(
     Ok(())
 }
 
-
+/// See who is free and when for a specified game
 #[poise::command(slash_command)]
 pub async fn availability(
     ctx: Context<'_>,
@@ -272,18 +276,19 @@ pub async fn availability(
     Ok(())
 }
 
-#[poise::command(slash_command)]
-pub async fn help(ctx: Context<'_>) -> Result<(), Error> {
-    let title = "Here is a quick rundown of the things you can do:".to_string();
-    let description = "`/new_game <game name>`  Create a game and give it a name\n\n\
-    `/games`  List all games\n\n\
-    `/delete_game <game code>`  Delete the game with the provided game code\n\n\
-    `/register_for_game <game code> <multiple data>`  Register for a game, select the days you can do and set at true.\n\n\
-    `/availability <game code>`  Show what days people are available for the specified game code.\n\n\
-    ".to_string();
-
-    messages::send_message(ctx, title, description).await?;
-
+/// Show the help menu
+#[poise::command(prefix_command, track_edits, slash_command)]
+pub async fn help(
+    ctx: Context<'_>,
+    #[description = "Specific command to show help about"] command: Option<String>,
+) -> Result<(), Error> {
+    let config = poise::builtins::HelpConfiguration {
+        extra_text_at_bottom: "\
+Type /help command for more info on a command.
+You can edit your message to the bot and the bot will edit its response.",
+        ..Default::default()
+    };
+    poise::builtins::help(ctx, command.as_deref(), config).await?;
     Ok(())
 }
 
