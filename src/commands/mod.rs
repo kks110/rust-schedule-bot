@@ -57,7 +57,7 @@ pub async fn games(ctx: Context<'_>) -> Result<(), Error> {
         for game in games {
             match database::users::load_user_count_by_game_id(&conn, game.id) {
                 Ok(user_count) => {
-                    description.push_str(&format!("{} ({}) - {}/{} players registered\n", game.name, game.code, user_count, game.user_count));
+                    description.push_str(&format!("**{}**\n Code: **{}**\n {}/{} players\n\n", game.name, game.code, user_count, game.user_count));
                 }
                 Err(e) => { error_message = Some(e.to_string()) }
             }
@@ -216,13 +216,11 @@ pub async fn availability(
 
         if let Some(users) = users {
             let title = format!("Availability for game {} ({})", game.name, game.code);
-            let mut monday = Day::new();
-            let mut tuesday = Day::new();
-            let mut wednesday = Day::new();
-            let mut thursday = Day::new();
-            let mut friday = Day::new();
-            let mut saturday = Day::new();
-            let mut sunday = Day::new();
+            let mut monday = Day::new("Monday".to_string());
+            let mut tuesday = Day::new("Tuesday".to_string());
+            let mut wednesday = Day::new("Wednesday".to_string());
+            let mut thursday = Day::new("Thursday".to_string());
+            let mut friday = Day::new("Friday".to_string());
 
             for user in users {
                 if user.monday {
@@ -240,28 +238,14 @@ pub async fn availability(
                 if user.friday {
                     friday.players.push(user.name.clone());
                 }
-                if user.saturday {
-                    saturday.players.push(user.name.clone());
-                }
-                if user.sunday {
-                    sunday.players.push(user.name.clone());
-                }
             }
             let description = format!(
-                "Monday: {}\n
-                Tuesday: {}\n
-                Wednesday: {}\n
-                Thursday: {}\n
-                Friday: {}\n
-                Saturday: {}\n
-                Sunday: {}\n",
+                "{}{}{}{}{}",
                 monday,
                 tuesday,
                 wednesday,
                 thursday,
                 friday,
-                saturday,
-                sunday,
             );
 
             messages::send_message(ctx, title, description).await?;
@@ -301,20 +285,28 @@ fn available(day: bool) -> String {
 }
 
 struct Day {
-    pub players: Vec<String>
+    pub players: Vec<String>,
+    pub name: String
 }
 
 impl Day {
-    fn new() -> Day {
-        Day { players: Vec::new() }
+    fn new(name: String) -> Day {
+        Day { players: Vec::new(), name }
     }
 }
 
 impl Display for Day {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut output_string = "".to_string();
-        for player in &self.players {
-            output_string.push_str(&format!("{}, ", player))
+
+        if !self.players.is_empty() {
+            output_string.push_str(&format!("**{}** ({} player(s))\n", self.name.to_string(), self.players.len()));
+
+            for player in &self.players {
+                output_string.push_str(&format!("{}, ", player))
+            }
+
+            output_string.push_str(&format!("\n\n"));
         }
         write!(f, "{}", output_string)
     }
