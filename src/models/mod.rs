@@ -79,6 +79,8 @@ impl NewUser {
                 "wednesday" => user.wednesday = true,
                 "thursday" => user.thursday = true,
                 "friday" => user.friday = true,
+                "saturday" => user.saturday = true,
+                "sunday" => user.sunday = true,
                 _ => {}
             }
         }

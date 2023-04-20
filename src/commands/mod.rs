@@ -20,7 +20,7 @@ pub async fn new_game(
     let mut error_message: Option<String> = None;
 
     let conn = database::establish_connection();
-    match database::games::create_game(&conn, &game_code, &game_name, 5) {
+    match database::games::create_game(&conn, &game_code, &game_name, 10) {
         Ok(_) => {}
         Err(e) => { error_message = Some(e.to_string()) }
     };
@@ -120,6 +120,12 @@ pub async fn register_for_game(
     #[description = "Friday"]
     #[lazy]
     friday: Option<bool>,
+    #[description = "Saturday"]
+    #[lazy]
+    saturday: Option<bool>,
+    #[description = "Sunday"]
+    #[lazy]
+    sunday: Option<bool>,
 ) -> Result<(), Error> {
     let mut days_playable: Vec<String> = vec![];
     if let Some(mon) = monday {
@@ -145,6 +151,16 @@ pub async fn register_for_game(
     if let Some(fri) = friday {
         if fri {
             days_playable.push("friday".to_string())
+        }
+    }
+    if let Some(sat) = saturday {
+        if sat {
+            days_playable.push("saturday".to_string())
+        }
+    }
+    if let Some(sun) = sunday {
+        if sun {
+            days_playable.push("sunday".to_string())
         }
     }
 
@@ -221,6 +237,8 @@ pub async fn availability(
             let mut wednesday = Day::new("Wednesday".to_string());
             let mut thursday = Day::new("Thursday".to_string());
             let mut friday = Day::new("Friday".to_string());
+            let mut saturday = Day::new("Saturday".to_string());
+            let mut sunday = Day::new("Sunday".to_string());
 
             for user in users {
                 if user.monday {
@@ -238,14 +256,22 @@ pub async fn availability(
                 if user.friday {
                     friday.players.push(user.name.clone());
                 }
+                if user.saturday {
+                    saturday.players.push(user.name.clone());
+                }
+                if user.sunday {
+                    sunday.players.push(user.name.clone());
+                }
             }
             let description = format!(
-                "{}{}{}{}{}",
+                "{}{}{}{}{}{}{}",
                 monday,
                 tuesday,
                 wednesday,
                 thursday,
                 friday,
+                saturday,
+                sunday
             );
 
             messages::send_message(ctx, title, description).await?;
